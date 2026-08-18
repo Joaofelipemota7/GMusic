@@ -1,0 +1,13 @@
+-- Configuração do GIT
+git config --global user.name Joaofelipemota7
+git config --global user.email joaoafelipemota.m@gmail.com
+
+-- Criar um projeto vazio
+npx create-expo-app@latest GMusic --template blank@57
+
+cd GMusic
+
+-- Instalar as bibliotecas
+npx expo install expo-audio expo-linear-gradient expo-splash-screen expo-status-bar
+npx expo install react-native-safe-area-context @react-native-community/slider
+npx expo install @expo/vector-icons expo-font
