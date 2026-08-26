@@ -40,12 +40,27 @@ export default function MusicPlayer() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <View style={styles.header}>
         <Text style={styles.eyebrow}>TOCANDO AGORA</Text>
-        <Text style={styles.title}>GMusic</Text>
-        <Text style={styles.description}>
-          Nosso player começa aqui
+        <Text style={styles.counter}>
+          {selectedIndex + 1} de {songs.length}
         </Text>
+        </View>
+
+        <FlatList 
+          data={songs}
+          horizontal
+          pagingEnabled
+          renderItem={renderArtwork}
+          keyExtractor={(item) => String(item.id)}
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollBegin={}
+        />
+
+      <View style={styles.metadata}>
+        <Text style ={styles.songTitle}>{currectSong.title} </Text>
+        <Text style ={}></>
+      </View>
       </View>
     </SafeAreaView>
   )
@@ -56,6 +71,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  header: {
+    height: 70,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems
+  }
+
+
   content: {
     flex: 1,
     alignItems: 'center',
@@ -68,6 +91,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.8
   },
+counter: {
+  color: colors.textSecondary,
+  fontSize: 12,
+},
   title: {
     marginTop: 8,
     color: colors.text,
@@ -77,5 +104,30 @@ const styles = StyleSheet.create({
   description: {
     marginTop: 10,
     color: colors.textSecondary,
+  },
+  artWorkPage: {
+    alignItems: 'center',
+    justifyContent:'center',
+  },
+  artwork: {
+    borderRadius: 24,
+  },
+  metadata: {
+    minHeight: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  songTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center'
+  },
+  songArtist: {
+    marginTop: 6,
+    color: colors.textSecondary,
+    fontSize: 14,
   }
+
 })
