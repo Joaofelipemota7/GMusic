@@ -1,24 +1,81 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import{
+  setAudioModeAsync,
+  useAudioPlaylist,
+  useAudioPlaylistStatus,
+  from 'expo-audio';
+}
 import { 
     FlatList,
     Image,
+    Pressable,
     StyleSheet,
     Text,
     useWindowDimensions,
-    View 
+    View
     } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import{ songs } from '../model/data';
 import colors from '../theme/colors';
+
+const audioSources = songs.map((song) => song.url);
 
 export default function MusicPlayer() {
     const { width } =useWindowDimensions();
     const [selectedIndex, setSelectedIndex] = useState(0);
 
+const playlistOptions = useMemo(
+  () => ({
+    sources: audioSources,
+    loop: 'none',
+    updateInterval:250,
+  })
+)
+
+const playlist = useAudioPlaylist(playlistOptions);
+const status = useAudioPlayerStatus(playlist),
+
     const currectSong =songs[selectedIndex];
     const artworkSize = Math.min(width - 40, 380);
     
+    useEffect(() => {
+      setAudioModeAsync({
+        playsInSilentMode: true,
+        shouldPlayInBackground: false,
+        interruptionMode: 'doNotMix',
+      })
+    }, []);
+
+    useEffect(() => {
+      if (Number.isInteger(status.currectIndex)) {
+        setSelectedIndex(status.currectIndex);
+      }
+    }, [StatusBar.currectIndex]);
+
+  function selectSong(index){
+    if(index < 0 || index >= songs.length || index === selectedIndex) {
+      return;
+    }
+
+    const shouldResume = status.playing;
+    setSelectedIndex(index);
+    playlist.skipTo(index);
+
+    if (shouldResume) {
+      playlist.play;
+    }
+  }
+
+  function handlePlayPause() {
+    if(status.playing) {
+      playlist.pause();
+    }else {
+      playlist.play();
+    }
+  }
+  
+
     function handleMomentumEnd(event) {
         const offset = event.nativeEvent.contentOffset.x;
         const index = Math.round(offset / width);
@@ -59,10 +116,9 @@ export default function MusicPlayer() {
 
       <View style={styles.metadata}>
         <Text style ={styles.songTitle}>{currectSong.title} </Text>
-        <Text style ={}></>
+        <Text style ={}></Text>
       </View>
       </View>
-    </SafeAreaView>
   )
 }
 
@@ -76,8 +132,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems
-  }
-
+  },
 
   content: {
     flex: 1,
