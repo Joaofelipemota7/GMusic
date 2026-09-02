@@ -1,60 +1,59 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import Ionicons from '@expo/vector-icons/Ionicons'
-import{
+import Ionicons from '@expo/vector-icons/Ionicons';
+import {
   setAudioModeAsync,
   useAudioPlaylist,
   useAudioPlaylistStatus,
-  from 'expo-audio';
-}
-import { 
-    FlatList,
-    Image,
-    Pressable,
-    StyleSheet,
-    Text,
-    useWindowDimensions,
-    View
-    } from 'react-native'
+ } from 'expo-audio';
+import {
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
-import{ songs } from '../model/data';
+import  songs  from '../model/data';
 import colors from '../theme/colors';
 
 const audioSources = songs.map((song) => song.url);
 
 export default function MusicPlayer() {
-    const { width } =useWindowDimensions();
-    const [selectedIndex, setSelectedIndex] = useState(0);
+  const { width } = useWindowDimensions();
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-const playlistOptions = useMemo(
-  () => ({
-    sources: audioSources,
-    loop: 'none',
-    updateInterval:250,
-  })
-)
+  const playlistOptions = useMemo(
+    () => ({
+      sources: audioSources,
+      loop: 'none',
+      updateInterval: 250,
+    })
+  );
 
-const playlist = useAudioPlaylist(playlistOptions);
-const status = useAudioPlayerStatus(playlist),
+  const playlist = useAudioPlaylist(playlistOptions);
+  const status = useAudioPlaylistStatus(playlist);
 
-    const currectSong =songs[selectedIndex];
-    const artworkSize = Math.min(width - 40, 380);
-    
-    useEffect(() => {
-      setAudioModeAsync({
-        playsInSilentMode: true,
-        shouldPlayInBackground: false,
-        interruptionMode: 'doNotMix',
-      })
-    }, []);
+  const currentSong = songs[selectedIndex];
+  const artworkSize = Math.min(width-40, 380);
 
-    useEffect(() => {
-      if (Number.isInteger(status.currectIndex)) {
-        setSelectedIndex(status.currectIndex);
-      }
-    }, [StatusBar.currectIndex]);
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: false,
+      interruptionMode: 'doNotMix',
+    })
+  }, []);
 
-  function selectSong(index){
-    if(index < 0 || index >= songs.length || index === selectedIndex) {
+  useEffect(() => {
+    if (Number.isInteger(status.currentIndex)) {
+      setSelectedIndex(status.currentIndex);
+    }
+  }, [status.currentIndex]);
+
+  function selectSong(index) {
+    if (index < 0 || index >= songs.length || index === selectedIndex) {
       return;
     }
 
@@ -68,72 +67,80 @@ const status = useAudioPlayerStatus(playlist),
   }
 
   function handlePlayPause() {
-    if(status.playing) {
+    if (status.playing) {
       playlist.pause();
-    }else {
+    } else {
       playlist.play();
     }
   }
-  
 
-    function handleMomentumEnd(event) {
-        const offset = event.nativeEvent.contentOffset.x;
-        const index = Math.round(offset / width);
-        setSelectedIndex(index);
-    }
+  function handleMomentumEnd(event) {
+    const offset = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offset / width);
+    setSelectedIndex(index);
+  }
 
-    function renderArtwork({ item }) {
-        return (
-            <View style={[styles.artWorkPage, { width }]}>
-                <Image
-                source={item.artwork}
-                style={[styles.artwork,
-                    {width: artworkSize,heught: artworkSize },
-                ]}
-                />
-            </View>
-        )
-    }
+  function renderArtwork({ item }) {
+    return (
+      <View style={[styles.artworkPage, { width }]}>
+        <Image
+          source={item.artwork}
+          style={[styles.artwork,
+          { width: artworkSize, height: artworkSize },
+          ]}
+        />
+      </View>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.eyebrow}>TOCANDO AGORA</Text>
-        <Text style={styles.counter}>
-          {selectedIndex + 1} de {songs.length}
-        </Text>
-        </View>
 
-        <FlatList 
-          data={songs}
-          horizontal
-          pagingEnabled
-          renderItem={renderArtwork}
-          keyExtractor={(item) => String(item.id)}
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollBegin={}
-        />
+      <FlatList 
+        data={songs}
+        horizontal
+        pagingEnabled
+        renderItem={renderArtwork}
+        keyExtractor={(item) => String(item.id)}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleMomentumEnd}
+      />
 
       <View style={styles.metadata}>
-        <Text style ={styles.songTitle}>{currectSong.title} </Text>
-        <Text style ={}></Text>
+        <Text style={styles.songTitle}>{currentSong.title}</Text>
+        <Text style={styles.songArtist}>{currentSong.artist}</Text>
       </View>
-      </View>
+
+      <Pressable
+      disabled={!status.isLoaded}
+      onPress={handlePlayPause}
+      style={style.playButton}
+      >
+      <Ionicons
+      name={status.playing ? 'pause' : 'play'}
+      size={38}
+      color={colors.background}
+      />
+      </Pressable>
+
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    alignItems: 'center',
     backgroundColor: colors.background,
+    paddingBottom: 28
   },
   header: {
     height: 70,
     paddingHorizontal: 20,
     flexDirection: 'row',
-    alignItems
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-
   content: {
     flex: 1,
     alignItems: 'center',
@@ -146,10 +153,10 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.8
   },
-counter: {
-  color: colors.textSecondary,
-  fontSize: 12,
-},
+  counter: {
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
   title: {
     marginTop: 8,
     color: colors.text,
@@ -160,9 +167,9 @@ counter: {
     marginTop: 10,
     color: colors.textSecondary,
   },
-  artWorkPage: {
+  artworkPage: {
     alignItems: 'center',
-    justifyContent:'center',
+    justifyContent: 'center',
   },
   artwork: {
     borderRadius: 24,
@@ -183,6 +190,13 @@ counter: {
     marginTop: 6,
     color: colors.textSecondary,
     fontSize: 14,
+  },
+  playButton: {
+    width: 78,
+    height: 78,
+    borderRadius:39,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
   }
-
 })
