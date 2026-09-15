@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, {  useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Slider from '@react-native-community/slider';
+import { LinearGradient } from 'expo-linear-gradient'
 import {
   setAudioModeAsync,
   useAudioPlaylist,
@@ -9,21 +11,26 @@ import {
   FlatList,
   Image,
   Pressable,
+  Platform,
+  Share,
   StyleSheet,
   Text,
   useWindowDimensions,
   View
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
-import  songs  from '../model/data';
+
+import IconButton from '../components/IconButton';
+import songs from '../model/data';
 import colors from '../theme/colors';
+import formatTime from '../utils/formatTime';
 
 const audioSources = songs.map((song) => song.url);
 
 export default function MusicPlayer() {
   const { height, width } = useWindowDimensions();
   const listRef = useRef(null);
-  
+
   const playlistOptions = useMemo(
     () => ({
       sources: audioSources,
@@ -31,48 +38,59 @@ export default function MusicPlayer() {
       updateInterval: 250,
     })
   );
- 
+
   const playlist = useAudioPlaylist(playlistOptions);
   const status = useAudioPlaylistStatus(playlist);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [favoriteIds, setFavoriteIds] = useState(() => new Set());
   const [repeatOne, setRepeatOne] = useState(false);
-  const [isSeeking, setisSeeking] = useState(false);
-  const [seekPosition, setSeekPosition] =useState(0);
-  const [errorMessage, setErrorMessage] =useState('');
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekPosition, setSeekPosition] = useState(0);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const currentSong = songs[selectedIndex];
-  const isFavorite = favoriteIds.has(currectSong.id);
+  const isFavorite = favoriteIds.has(currentSong.id);
   const isCompact = height < 700;
-  const contentWidht = Math.min(Math.max(width - 40, 240), 460);
+  const contentWidth = Math.min(Math.max(width - 40, 240), 460);
   const artworkSize = Math.min(
-      contentWidht,
-      Math.max(isCompact ? 190: 240,
-        height * (isCOmpact ? 0.34 : 0.4)
-      )  ,
+    contentWidth,
+    Math.max(isCompact ? 190: 240,
+      height * (isCompact ? 0.34 : 0.4)),
       420
   );
-  
 
+  const duration = Number.isFinite(status.duration) ? status.duration : 0;
+  const currectTime = Number.isFinite(status.currectTime) ? status.currectTime : 0;
+  const displayPosition = isSeeking  ? seekPosition : currectTime;
+  const playerUnavailable = !status.isLoaded || status.isBuffering;
 
   useEffect(() => {
     setAudioModeAsync({
       playsInSilentMode: true,
       shouldPlayInBackground: false,
       interruptionMode: 'doNotMix',
+    }).catch(() => {
+      setErrorMessage('Não foi possivel configurar a reprodução de áudio!')
     })
   }, []);
 
   useEffect(() => {
-    if (Number.isInteger(status.currentIndex)) {
+    if (
+      Number.isInteger(status.currentIndex) &&
+      status.currectIndex >= 0 &&
+      status.currectIndex < songs.length
+    ) {
       setSelectedIndex(status.currentIndex);
     }
   }, [status.currentIndex]);
 
   useEffect(() => {
-    playlist.loop = repeatOne ? 'single' : 'none';
-  },  [playlist, repeatOne]);
+   listRef.currect?.scrollToIndex({
+    index: selectedIndex,
+    animated: true.
+   });
+  }, [selectedIndex, width]);
 
   function selectSong(index) {
     if (index < 0 || index >= songs.length || index === selectedIndex) {
@@ -99,7 +117,7 @@ export default function MusicPlayer() {
   function handleMomentumEnd(event) {
     const offset = event.nativeEvent.contentOffset.x;
     const index = Math.round(offset / width);
-    SelectSong(index);
+    selectSong(index);
   }
 
   function renderArtwork({ item }) {
@@ -117,6 +135,12 @@ export default function MusicPlayer() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* <View style={styles.header}>
+        <Text style={styles.eyebrow}>TOCANDO AGORA</Text>
+        <Text style={styles.counter}>
+          {selectedIndex + 1} de {songs.length}
+        </Text>
+      </View> */}
 
       <FlatList 
         data={songs}
@@ -134,15 +158,15 @@ export default function MusicPlayer() {
       </View>
 
       <Pressable
-      disabled={!status.isLoaded}
-      onPress={handlePlayPause}
-      style={style.playButton}
+        disabled={!status.isLoaded}
+        onPress={handlePlayPause}
+        style={styles.playButton}
       >
-      <Ionicons
-      name={status.playing ? 'pause' : 'play'}
-      size={38}
-      color={colors.background}
-      />
+        <Ionicons 
+          name={status.playing ? 'pause' : 'play'}
+          size={38}
+          color={colors.background}
+        />
       </Pressable>
 
     </SafeAreaView>
@@ -216,7 +240,7 @@ const styles = StyleSheet.create({
   playButton: {
     width: 78,
     height: 78,
-    borderRadius:39,
+    borderRadius: 39,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
