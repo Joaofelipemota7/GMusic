@@ -1,4 +1,4 @@
-import React, {  useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Slider from '@react-native-community/slider';
 import { LinearGradient } from 'expo-linear-gradient'
@@ -10,8 +10,8 @@ import {
 import {
   FlatList,
   Image,
-  Pressable,
   Platform,
+  Pressable,
   Share,
   StyleSheet,
   Text,
@@ -55,14 +55,12 @@ export default function MusicPlayer() {
   const contentWidth = Math.min(Math.max(width - 40, 240), 460);
   const artworkSize = Math.min(
     contentWidth,
-    Math.max(isCompact ? 190: 240,
-      height * (isCompact ? 0.34 : 0.4)),
+    Math.max(isCompact ? 190: 240, height * (isCompact ? 0.34 : 0.4)),
       420
   );
-
   const duration = Number.isFinite(status.duration) ? status.duration : 0;
-  const currectTime = Number.isFinite(status.currectTime) ? status.currectTime : 0;
-  const displayPosition = isSeeking  ? seekPosition : currectTime;
+  const currentTime = Number.isFinite(status.currentTime) ? status.currentTime : 0;
+  const displayPosition = isSeeking ? seekPosition : currentTime;
   const playerUnavailable = !status.isLoaded || status.isBuffering;
 
   useEffect(() => {
@@ -71,33 +69,38 @@ export default function MusicPlayer() {
       shouldPlayInBackground: false,
       interruptionMode: 'doNotMix',
     }).catch(() => {
-      setErrorMessage('Não foi possivel configurar a reprodução de áudio!')
+      setErrorMessage('Não foi possível configurar a reprodução de áudio.');
     })
   }, []);
+  
+  useEffect(() => {
+    playlist.loop = repeatOne ? 'single' : 'none';
+  }, [playlist, repeatOne]);
 
   useEffect(() => {
     if (
       Number.isInteger(status.currentIndex) &&
-      status.currectIndex >= 0 &&
-      status.currectIndex < songs.length
+      status.currentIndex >= 0 &&
+      status.currentIndex < songs.length
     ) {
       setSelectedIndex(status.currentIndex);
     }
   }, [status.currentIndex]);
 
   useEffect(() => {
-   listRef.currect?.scrollToIndex({
-    index: selectedIndex,
-    animated: true.
-   });
+    listRef.current?.scrollToIndex({
+      index: selectedIndex,
+      animated: true,
+    });
   }, [selectedIndex, width]);
 
-  function selectSong(index) {
+  const selectedSong = useCallback (index) => {
     if (index < 0 || index >= songs.length || index === selectedIndex) {
       return;
     }
 
-    const shouldResume = status.playing;
+    try {
+       const shouldResume = status.playing;
     setSelectedIndex(index);
     playlist.skipTo(index);
 
@@ -105,20 +108,45 @@ export default function MusicPlayer() {
       playlist.play;
     }
   }
+    } catch {
+      reportPlaybackError();
+    }
+  }, [playlist, reportPlaybackError, selectedIndex, status.playing]
+   
 
-  function handlePlayPause() {
+  function handlePlayPause = useCallback(() => {
+    try {
     if (status.playing) {
       playlist.pause();
     } else {
       playlist.play();
     }
-  }
+  } catch {
+    reportPlaybackError();
+    }
+  }, [playlist, reportPlaybackError, status.playing]);
 
-  function handleMomentumEnd(event) {
+  function handleMomentumEnd = useCallback ((event) => {
     const offset = event.nativeEvent.contentOffset.x;
     const index = Math.round(offset / width);
-    selectSong(index);
-  }
+  selectSong(index);
+  },[selectedSong, width])
+
+  const handleNext = useCallback(() => {
+    try {
+      if (currectTime > 3) {
+        await playlist.seekTo();
+        return;
+      }
+      const previousIndex = (selectedIndex - 1 + songs.length) %  songs.length;
+      selectSong(previousIndex);
+    } catch (error) {
+      reportPlaybackError();
+    }
+  }, [currectTime, playlist, reportPlaybackError,]
+  }, [selectedSong, selectedIndex]);
+  
+
 
   function renderArtwork({ item }) {
     return (
